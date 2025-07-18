@@ -22343,7 +22343,7 @@ namespace basist
 						if (d >= mid_dots[mid]) low = mid + 1;
 
 						best_idx = low;
-						assert((best_idx >= 0) && (best_idx <= 15));
+						assert(best_idx <= 15);
 
 						pWeights[i] = (uint8_t)best_idx;
 
@@ -22375,7 +22375,7 @@ namespace basist
 						if (d >= mid_dots[mid]) low = mid + 1;
 
 						best_idx = low;
-						assert((best_idx >= 0) && (best_idx <= 15));
+						assert(best_idx <= 15);
 
 						float err = basisu::squaref(qr - cr[best_idx]) + basisu::squaref(qg - cg[best_idx]) + basisu::squaref(qb - cb[best_idx]);
 
