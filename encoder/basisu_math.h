@@ -2359,9 +2359,9 @@ namespace bu_math
 		return result;
 	}
 
-	template<typename X, typename Y> matrix<X::num_rows* Y::num_rows, X::num_cols* Y::num_cols, typename X::scalar_type> matrix_kronecker_product(const X& a, const Y& b)
+	template<typename X, typename Y> matrix<uint32_t(X::num_rows) * uint32_t(Y::num_rows), uint32_t(X::num_cols) * uint32_t(Y::num_cols), typename X::scalar_type> matrix_kronecker_product(const X& a, const Y& b)
 	{
-		matrix<X::num_rows* Y::num_rows, X::num_cols* Y::num_cols, typename X::scalar_type> result;
+		matrix<uint32_t(X::num_rows)* uint32_t(Y::num_rows), uint32_t(X::num_cols)* uint32_t(Y::num_cols), typename X::scalar_type> result;
 
 		for (uint32_t r = 0; r < X::num_rows; r++)
 		{
