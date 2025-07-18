@@ -1,18 +1,22 @@
 # Important: The Basis Universal encoder and transcoder libraries must be compiled with -fno-strict-aliasing (MSVC's default, and also the Linux kernel).
 # It should also work without this option, but we do not test with it.
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 project(basisu C CXX)
 set(CMAKE_CXX_STANDARD 17)
-option(STATIC "static linking" FALSE)
-option(SAN "sanitize" FALSE)
+
+option(BASISU_SANITIZE "Enable sanitize" FALSE)
+option(BASISU_BUILD_EXECUTABLES "Build executables" TRUE)
+option(BASISU_BUILD_EXAMPLES "Build examples" TRUE)
+option(BASISU_STATIC "Static link executables" FALSE)
+
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 # For MSVC builds default to SSE enabled, and determine if it's a 64-bit (-A x64) vs. 32-bit (-A Win32) build.
 if (MSVC)
     option(SSE "SSE 4.1 support" TRUE)
-    if ( CMAKE_GENERATOR_PLATFORM STREQUAL Win32 )    
+    if ( CMAKE_GENERATOR_PLATFORM STREQUAL Win32 )
         set(BUILD_X64 0)
     else()
         set(BUILD_X64 1)
@@ -31,7 +35,7 @@ message("Initial CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 message("Initial SSE=${SSE}")
 message("Initial ZSTD=${ZSTD}")
 message("Initial OPENCL=${OPENCL}")
-message("Initial SAN=${SAN}")
+message("Initial SANITIZE=${BASISU_SANITIZE}")
 
 if ((NOT MSVC) AND OPENCL)
     # With MSVC builds we use the Khronos lib/include files in the project's "OpenCL" directory, to completely avoid requiring fiddly to install vendor SDK's.
@@ -69,27 +73,29 @@ endif()
 if (NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-   
+
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
-    if (SAN)
-		message("Enabling SAN")
-		
+	if (BASISU_SANITIZE)
+		message("Enabling sanitize")
+
 		  set(SANITIZE_FLAGS "-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize=alignment")
-		
+
 		  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SANITIZE_FLAGS}")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${SANITIZE_FLAGS}")
-	
+
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${SANITIZE_FLAGS}")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${SANITIZE_FLAGS}")
     endif()
 
     set(CMAKE_CXX_FLAGS -std=c++17)
-    set(GCC_COMPILE_FLAGS "-fvisibility=hidden -fPIC -fno-strict-aliasing -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-unused-local-typedefs -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable -Wno-reorder -Wno-misleading-indentation -Wno-class-memaccess -Wno-deprecated-copy -Wno-maybe-uninitialized -Wno-unused-function -Wno-stringop-overflow -Wno-unknown-warning-option")
-   
+    set(GCC_COMPILE_FLAGS "-fvisibility=hidden -fPIC -fno-strict-aliasing -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-unused-local-typedefs -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable -Wno-misleading-indentation -Wno-maybe-uninitialized -Wno-unused-function -Wno-stringop-overflow")
+	set(GCC_COMPILE_FLAGS_CXX "-fvisibility=hidden -fPIC -fno-strict-aliasing -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-unused-local-typedefs -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable -Wno-reorder -Wno-misleading-indentation -Wno-class-memaccess -Wno-deprecated-copy -Wno-maybe-uninitialized -Wno-unused-function -Wno-stringop-overflow")
+
     if (NOT BUILD_X64)
         set(GCC_COMPILE_FLAGS "${GCC_COMPILE_FLAGS} -m32")
+		set(GCC_COMPILE_FLAGS_CXX "${GCC_COMPILE_FLAGS} -m32")
     endif()
 
     if (EMSCRIPTEN)
@@ -97,7 +103,7 @@ if (NOT MSVC)
         set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1 -DBASISU_SUPPORT_SSE=0")
 
         set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_LINK_FLAGS}")
-    elseif (STATIC)
+	elseif (BASISU_STATIC)
         if (SSE)
             set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_SSE=1 -msse4.1")
             set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_SSE=1 -msse4.1")
@@ -105,7 +111,7 @@ if (NOT MSVC)
             set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_SSE=0")
             set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_SSE=0")
         endif()
-      
+
         set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_LINK_FLAGS} -static-libgcc -static-libstdc++ -static")
     else()
         if (SSE)
@@ -115,7 +121,7 @@ if (NOT MSVC)
             set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_SSE=0")
             set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_SSE=0")
         endif()
-      
+
         set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_LINK_FLAGS} -Wl,-rpath .")
     endif()
 
@@ -123,9 +129,9 @@ if (NOT MSVC)
     set(CMAKE_C_FLAGS_RELEASE  "${CMAKE_C_FLAGS_RELEASE} ${GCC_COMPILE_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${GCC_COMPILE_FLAGS} -D_DEBUG")
 
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} ${GCC_COMPILE_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${GCC_COMPILE_FLAGS} -D_DEBUG")
+	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS_CXX}")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} ${GCC_COMPILE_FLAGS_CXX}")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${GCC_COMPILE_FLAGS_CXX} -D_DEBUG")
 else()
     if (SSE)
         set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_SSE=1")
@@ -171,27 +177,34 @@ endif()
 add_library(basisu_encoder STATIC ${ENCODER_LIB_SRC_LIST})
 
 # Create the basisu executable and link against the static library
-add_executable(basisu basisu_tool.cpp)
-target_link_libraries(basisu PRIVATE basisu_encoder)
+if (BASISU_BUILD_EXECUTABLES)
+	add_executable(basisu basisu_tool.cpp)
+	target_link_libraries(basisu PRIVATE basisu_encoder)
+	if (ZSTD)
+		target_compile_definitions(basisu PRIVATE BASISD_SUPPORT_KTX2_ZSTD=1)
+	else()
+		target_compile_definitions(basisu PRIVATE BASISD_SUPPORT_KTX2_ZSTD=0)
+	endif()
+endif()
 
 # Create the new example executable and link against the static library
-add_executable(examples example/example.cpp)
-target_link_libraries(examples PRIVATE basisu_encoder)
+if (BASISU_BUILD_EXAMPLES)
+	add_executable(examples example/example.cpp)
+	target_link_libraries(examples PRIVATE basisu_encoder)
 
-if (ZSTD)
-    target_compile_definitions(basisu PRIVATE BASISD_SUPPORT_KTX2_ZSTD=1)
-    target_compile_definitions(examples PRIVATE BASISD_SUPPORT_KTX2_ZSTD=1)
-else()
-    target_compile_definitions(basisu PRIVATE BASISD_SUPPORT_KTX2_ZSTD=0)
-    target_compile_definitions(examples PRIVATE BASISD_SUPPORT_KTX2_ZSTD=0)
+	if (ZSTD)
+		target_compile_definitions(examples PRIVATE BASISD_SUPPORT_KTX2_ZSTD=1)
+	else()
+		target_compile_definitions(examples PRIVATE BASISD_SUPPORT_KTX2_ZSTD=0)
+	endif()
 endif()
 
 if (NOT MSVC)
     # For Non-Windows builds, let cmake try and find the system OpenCL headers/libs for us.
     if (OPENCL AND OPENCL_FOUND)
         set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_OPENCL=1")
-        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_OPENCL=1")    
-        
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_OPENCL=1")
+
         target_include_directories(basisu PRIVATE ${OpenCL_INCLUDE_DIRS})
         target_include_directories(examples PRIVATE ${OpenCL_INCLUDE_DIRS})
 		target_include_directories(basisu_encoder PRIVATE ${OpenCL_INCLUDE_DIRS})
@@ -201,8 +214,8 @@ else()
     # For Windows builds, we use our local copies of the OpenCL import lib and Khronos headers.
     if (OPENCL)
         set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DBASISU_SUPPORT_OPENCL=1")
-        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_OPENCL=1")    
-        
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DBASISU_SUPPORT_OPENCL=1")
+
         target_include_directories(basisu PRIVATE "OpenCL")
         target_include_directories(examples PRIVATE "OpenCL")
 		target_include_directories(basisu_encoder PRIVATE "OpenCL")
@@ -215,11 +228,15 @@ else()
             target_link_libraries(examples PRIVATE "${CMAKE_SOURCE_DIR}/OpenCL/lib/OpenCL.lib")
         endif()
     endif()
-endif()    
+endif()
 
 if (NOT MSVC)
-    target_link_libraries(basisu PRIVATE m pthread ${BASISU_EXTRA_LIBS})
-    target_link_libraries(examples PRIVATE m pthread ${BASISU_EXTRA_LIBS})
+	if (BASISU_BUILD_EXECUTABLES)
+		target_link_libraries(basisu PRIVATE m pthread ${BASISU_EXTRA_LIBS})
+	endif()
+	if (BASISU_BUILD_EXAMPLES)
+		target_link_libraries(examples PRIVATE m pthread ${BASISU_EXTRA_LIBS})
+	endif()
 endif()
 
 if (NOT EMSCRIPTEN)
@@ -237,19 +254,19 @@ if (NOT EMSCRIPTEN)
 endif()
 
 if (MSVC)
-	set_target_properties(basisu PROPERTIES 
+	set_target_properties(basisu PROPERTIES
         RUNTIME_OUTPUT_NAME "basisu"
         RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )	
-	
-	set_target_properties(examples PROPERTIES 
+    )
+
+	set_target_properties(examples PROPERTIES
         RUNTIME_OUTPUT_NAME "examples"
         RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )	
+    )
 endif()
