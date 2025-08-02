@@ -102,24 +102,24 @@ function(configure_basisu_target target_name is_executable)
 			-fvisibility=hidden
 			-fPIC
 			-fno-strict-aliasing
-			-Wall
-			-Wextra
-			-Wno-unused-local-typedefs
-			-Wno-unused-value
-			-Wno-unused-parameter
-			-Wno-unused-variable
-			-Wno-misleading-indentation
-			-Wno-unused-function
-			-Wno-maybe-uninitialized
-			-Wno-stringop-overflow
+#			-Wall
+#			-Wextra
+#			-Wno-unused-local-typedefs
+#			-Wno-unused-value
+#			-Wno-unused-parameter
+#			-Wno-unused-variable
+#			-Wno-misleading-indentation
+#			-Wno-unused-function
+#			-Wno-maybe-uninitialized
+#			-Wno-stringop-overflow
 		)
 
 		# C++ specific warnings
-		target_compile_options(${target_name} PRIVATE
-			$<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
-			$<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
-			$<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>
-		)
+		#target_compile_options(${target_name} PRIVATE
+		#	$<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
+		#	$<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
+		#	$<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>
+		#)
 
 		# Common preprocessor definitions
 	 	 target_compile_definitions(${target_name} PRIVATE
