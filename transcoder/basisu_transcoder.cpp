@@ -16,10 +16,10 @@
 #include "basisu_transcoder.h"
 #include "basisu_containers_impl.h"
 
+#include "basisu_astc_hdr_core.h"
+
 #define BASISU_ASTC_HELPERS_IMPLEMENTATION
 #include "basisu_astc_helpers.h"
-
-#include "basisu_astc_hdr_core.h"
 
 #include <limits.h>
 
@@ -4622,6 +4622,7 @@ namespace basist
 		const int CHROMA_THRESH = 10;
 		
 		uint32_t total_filtered_blocks = 0;
+		BASISU_NOTE_UNUSED(total_filtered_blocks);
 
 		for (int by = 0; by < (int)num_blocks_y; by++)
 		{
