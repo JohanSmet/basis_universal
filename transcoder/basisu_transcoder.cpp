@@ -15454,8 +15454,8 @@ namespace basist
 						h = (h * 127 + 127) / 255;
 					}
 
-					dst_blk.m_low->m_c[bc7_comp] = (uint8_t)l;
-					dst_blk.m_high->m_c[bc7_comp] = (uint8_t)h;
+					dst_blk.m_low->m_c[bc7_comp & 3] = (uint8_t)l;
+					dst_blk.m_high->m_c[bc7_comp & 3] = (uint8_t)h;
 				}
 			}
 
